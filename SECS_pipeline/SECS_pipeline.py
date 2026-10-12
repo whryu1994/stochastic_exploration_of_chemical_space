@@ -305,24 +305,20 @@ def cluster_fingerprints(fingerprints, cutoff=0.2):
 
 def get_cluster_medoids(
     fingerprints, 
-    clusters,
-    cluster_size_threshold # Only save info for cluster with certain amount of elements innit
+    clusters
 ):
     medoids = []
     for cluster in clusters:
-        if len(cluster) < cluster_size_threshold:
-            continue
-        else:
-            # Compute average similarity to all others in the cluster
-            avg_sims = []
-            for idx in cluster:
-                sims = DataStructs.BulkTanimotoSimilarity(fingerprints[idx], [fingerprints[i] for i in cluster if i != idx])
-                avg_sims.append(np.mean(sims))
-            avg_sims = np.array(avg_sims)
-    
-            # Select the index with the highest average similarity
-            medoid_idx = cluster[np.argmax(avg_sims)]
-            medoids.append(medoid_idx)
+        # Compute average similarity to all others in the cluster
+        avg_sims = []
+        for idx in cluster:
+            sims = DataStructs.BulkTanimotoSimilarity(fingerprints[idx], [fingerprints[i] for i in cluster if i != idx])
+            avg_sims.append(np.mean(sims))
+        avg_sims = np.array(avg_sims)
+
+        # Select the index with the highest average similarity
+        medoid_idx = cluster[np.argmax(avg_sims)]
+        medoids.append(medoid_idx)
     return np.array(medoids)
 
 def cluster_trajectory(
@@ -340,8 +336,11 @@ def cluster_trajectory(
     fingerprints = [rdkit_gen.GetFingerprint(mol) for mol in mol_array]
 
     # Cluster based on fingerprints
+    # Only save info for cluster with certain amount of elements innit
     clusters = cluster_fingerprints(fingerprints)
-    medoids = get_cluster_medoids(fingerprints, clusters, cluster_size_threshold)
+    clusters = [cl for cl in clusters if len(cl) >= cluster_size_threshold]
+    
+    medoids = get_cluster_medoids(fingerprints, clusters)
 
     return clusters, medoids
 
